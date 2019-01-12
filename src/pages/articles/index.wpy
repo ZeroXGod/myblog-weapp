@@ -1,0 +1,86 @@
+<template>
+  <view class="page__bd">
+    <view class="weui-panel weui-panel_access">
+      <view class="weui-panel__hd">话题列表</view>
+      <view class="weui-panel__bd">
+        <repeat for="{{ articles }}" key="id" index="index" item="article">
+          <view class="weui-media-box weui-media-box_text">
+              <view class="weui-media-box__title weui-media-box__title_in-text">{{ article.title }}</view>
+              <view class="weui-media-box__info">
+                  <view class="weui-media-box__info__meta">{{ article.created_at }}</view>
+                  <view class="weui-media-box__info__meta weui-media-box__info__meta_extra">{{ article.category.name }}</view>
+              </view>
+          </view>
+        </repeat>
+        <view class="weui-loadmore weui-loadmore_line" wx:if="{{ noMoreData }}">
+          <view class="weui-loadmore__tips weui-loadmore__tips_in-line">没有更多数据</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import api from '@/utils/api'
+
+  export default class Index extends wepy.page {
+    config = {
+      enablePullDownRefresh: true
+    }
+    // 可用于页面模板绑定的数据
+    data = {
+      // 文章
+      articles: [],
+      // 当前分页
+      page: 1,
+      noMoreData: false
+    }
+    // 获取文章数据
+    async getArticles(page = 1, reset = false) {
+      try {
+        // 请求文章列表接口
+        let articlesResponse = await api.request({
+          url: 'articles',
+          data: {
+            page: page,
+            include: 'category'
+          }
+        })
+        let articles = articlesResponse.data.data
+        // 如果传入参数 reset 为true，则覆盖 articles
+        this.articles = reset ? articles : this.articles.concat(articles)
+
+        let pagination = articlesResponse.data.meta.pagination
+
+        if (pagination.current_page === pagination.total_pages) {
+          this.noMoreData = true
+        }
+        this.$apply()
+      } catch (err) {
+        console.log(err)
+        wepy.showModal({
+          title: '提示',
+          content: '服务器错误，请联系管理员'
+        })
+      }
+    }
+    async onLoad() {
+      this.getArticles()
+    }
+    async onPullDownRefresh() {
+      this.noMoreData = false
+      this.page = 1
+      await this.getArticles(1, true)
+      wepy.stopPullDownRefresh()
+    }
+    async onReachBottom () {
+      if (this.noMoreData) {
+        return
+      }
+      this.page = this.page + 1
+      await this.getArticles(this.page)
+      this.$apply()
+    }
+  }
+</script>
