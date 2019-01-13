@@ -1,7 +1,78 @@
+<style lang="less">
+  /*分类*/
+  .weui-flex {
+    align-items: center;
+  }
+  .weui-cells {
+    margin-top: 0;
+    opacity: 0;
+    transition: .3s;
+    &:before, &:after {
+        display: none;
+    }
+    &_show {
+        opacity: 1;
+    }
+  }
+  .weui-cell {
+    &:before {
+        right: 15px;
+    }
+  }
+  .category-list__item {
+    margin: 10px 0;
+    background-color: #FFFFFF;
+    border-radius: 2px;
+    overflow: hidden;
+    &:first-child {
+        margin-top: 0;
+    }
+  }
+  .category-list__item_selected {
+    background-color: #eeeeee;
+  }
+  .category-list__img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .category-list__item-hd {
+    padding: 20px;
+    transition: opacity .3s;
+    &_show {
+        opacity: .4;
+    }
+  }
+  .category-list__item-bd {
+    height: 0;
+    overflow: hidden;
+    &_show {
+        height: auto;
+    }
+  }
+</style>
 <template>
   <view class="page__bd">
+     <view class="category-list__item">
+      <view class="weui-flex category-list__item-hd" @tap="toggle">
+          <view class="weui-flex__item page-title">{{ currentCategory.name || '首页' }}</view>
+          <image class="category-list__img" src="/images/category.png"></image>
+      </view>
+
+      <view class="category-list__item-bd {{ categoryOpen ? 'category-list__item-bd_show' : '' }}">
+        <view class="weui-cells {{ categoryOpen ? 'weui-cells_show' : '' }}">
+          <view @tap="changeCategory()" class="weui-cell weui-cell_access {{ !currentCategory.id ? 'category-list__item_selected' : '' }}">
+            <view class="weui-cell__bd">首页</view>
+          </view>
+          <repeat for="{{ categories }}" item="category" key="id">
+            <view @tap="changeCategory({{ category.id }})" class="weui-cell weui-cell_access {{ currentCategory.id == category.id ? 'category-list__item_selected' : '' }}">
+              <view class="weui-cell__bd">{{ category.name }}</view>
+            </view>
+          </repeat>
+        </view>
+      </view>
+    </view>
     <view class="weui-panel weui-panel_access">
-      <view class="weui-panel__hd">话题列表</view>
       <view class="weui-panel__bd">
         <repeat for="{{ articles }}" key="id" index="index" item="article">
           <view class="weui-media-box weui-media-box_text">
@@ -35,7 +106,15 @@
       articles: [],
       // 当前分页
       page: 1,
-      noMoreData: false
+      noMoreData: false,
+      categories: [],
+      categoryOpen: false,
+      currentCategory: {}
+    }
+    computed = {
+      currentCategoryId () {
+        return this.currentCategory.id || 0
+      }
     }
     // 获取文章数据
     async getArticles(page = 1, reset = false) {
@@ -45,6 +124,7 @@
           url: 'articles',
           data: {
             page: page,
+            category_id: this.currentCategoryId,
             include: 'category'
           }
         })
@@ -69,8 +149,31 @@
         })
       }
     }
+    async getCategories() {
+      // 从缓存中获取分类数据
+      let categories = wepy.getStorageSync('categories')
+
+      if (!categories) {
+        try {
+          let categoriesResponse = await api.request('categories')
+          if (categoriesResponse.statusCode === 200) {
+            categories = categoriesResponse.data.data
+            wepy.setStorageSync('categories', categories)
+          }
+        } catch (err) {
+          wepy.showModal({
+            title: '提示',
+            content: '服务器错误，请联系管理员'
+          })
+        }
+      }
+
+      this.categories = categories
+      this.$apply()
+    }
     async onLoad() {
       this.getArticles()
+      this.getCategories()
     }
     async onPullDownRefresh() {
       this.noMoreData = false
@@ -85,6 +188,17 @@
       this.page = this.page + 1
       await this.getArticles(this.page)
       this.$apply()
+    }
+    methods = {
+      toggle () {
+        this.categoryOpen = !this.categoryOpen
+      },
+      async changeCategory (id = 0) {
+        this.currentCategory = id ? this.categories.find(category => category.id === id) : {}
+        this.categoryOpen = false
+        this.$apply()
+        await this.getArticles(1, true)
+      }
     }
   }
 </script>
