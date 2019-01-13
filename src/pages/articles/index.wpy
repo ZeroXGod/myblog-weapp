@@ -76,12 +76,15 @@
       <view class="weui-panel__bd">
         <repeat for="{{ articles }}" key="id" index="index" item="article">
           <view class="weui-media-box weui-media-box_text">
+            <navigator url="/pages/articles/show?id={{ article.id }}">
               <view class="weui-media-box__title weui-media-box__title_in-text">{{ article.title }}</view>
               <view class="weui-media-box__info">
                   <view class="weui-media-box__info__meta">{{ article.created_at_diff }}</view>
                   <view class="weui-media-box__info__meta weui-media-box__info__meta_extra">{{ article.category.name }}</view>
               </view>
+            </navigator>
           </view>
+
         </repeat>
         <view class="weui-loadmore weui-loadmore_line" wx:if="{{ noMoreData }}">
           <view class="weui-loadmore__tips weui-loadmore__tips_in-line">没有更多数据</view>

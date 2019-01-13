@@ -1,0 +1,76 @@
+<style lang="less">
+page{
+    background-color: #FFFFFF;
+}
+.avatar-wrap {
+  position: relative;
+  margin-right: 10px;
+}
+.avatar {
+  width: 50px;
+  height: 50px;
+  display: block;
+  border-radius: 50%;
+}
+.article-title {
+  padding: 15px;
+}
+</style>
+<template>
+  <view class="page">
+    <view class="page__bd">
+      <view class="article-title">
+        <view class="page__title">{{ article.title }}</view>
+        <view class="weui-media-box__info article-info">
+          <view class="weui-media-box__info__meta">{{ article.category.name }} • </view>
+          <view class="weui-media-box__info__meta">{{ article.updated_at_diff }} </view>
+        </view>
+      </view>
+      <view class="weui-article">
+        <rich-text nodes="{{ article.body }}" bindtap="tap"></rich-text>
+      </view>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+  import api from '@/utils/api'
+  import util from '@/utils/util'
+
+  export default class ArticleShow extends wepy.page {
+    config = {
+      navigationBarTitleText: '文章详情'
+    }
+    data = {
+      // 话题数据
+      article: null
+    }
+    // 获取话题数据
+    async getArticle(id) {
+      try {
+        let articleResponse = await api.request({
+          url: 'articles/' + id,
+          data: {
+            include: 'category'
+          }
+        })
+        let article = articleResponse.data
+
+        // 格式化 updated_at
+        article.updated_at_diff = util.diffForHumans(article.updated_at)
+
+        this.article = article
+        this.$apply()
+      } catch (err) {
+        console.log(err)
+        wepy.showModal({
+          title: '提示',
+          content: '服务器错误，请联系管理员'
+        })
+      }
+    }
+    onLoad(options) {
+      this.getArticle(options.id)
+    }
+  }
+</script>
