@@ -7,7 +7,7 @@
           <view class="weui-media-box weui-media-box_text">
               <view class="weui-media-box__title weui-media-box__title_in-text">{{ article.title }}</view>
               <view class="weui-media-box__info">
-                  <view class="weui-media-box__info__meta">{{ article.created_at }}</view>
+                  <view class="weui-media-box__info__meta">{{ article.created_at_diff }}</view>
                   <view class="weui-media-box__info__meta weui-media-box__info__meta_extra">{{ article.category.name }}</view>
               </view>
           </view>
@@ -23,6 +23,7 @@
 <script>
   import wepy from 'wepy'
   import api from '@/utils/api'
+  import util from '@/utils/util'
 
   export default class Index extends wepy.page {
     config = {
@@ -48,6 +49,9 @@
           }
         })
         let articles = articlesResponse.data.data
+        articles.forEach(function (article) {
+          article.created_at_diff = util.diffForHumans(article.created_at)
+        })
         // 如果传入参数 reset 为true，则覆盖 articles
         this.articles = reset ? articles : this.articles.concat(articles)
 
